@@ -34,10 +34,9 @@ def main():
 
 def sort_and_output(data: list, desc: bool = False, sort_by: str = 'local_score'):
     data.sort(key=lambda x: getattr(x, sort_by), reverse=desc)
-
     print(f"[{datetime.fromtimestamp(os.path.getmtime(LOCAL_LEADERBOARD)).strftime('%d.%m.%Y, %H:%M')}]\n\n")
-    print(tabulate([list(item.dict(exclude={'last_star_ts'}).values()) for item in data], headers=[
-        'Name', 'AOC Score', 'Local Score', 'Last Star Obtained', 'Stars']))
+    print(tabulate([list(item.dict().values()) for item in data], headers=[
+        'Name', 'AOC Score', 'Local Score', 'Last Star Obtained', 'Stars', 'Completion Days'], tablefmt='github'))
 
 
 def update_leaderboard():
@@ -55,15 +54,18 @@ class PlayerModel(BaseModel):
     name: str
     global_score: int
     local_score: int
-    last_star_str: Optional[str]
-    last_star_ts: int
+    last_star_ts: Optional[str]
     stars: int
+    completion_day_level: str
 
-    @validator('last_star_ts')
-    def parse_ts(cls, value, values):
-        values['last_star_str'] = datetime.fromtimestamp(
+    @validator('last_star_ts', pre=True)
+    def parse_ts(cls, value):
+        return datetime.fromtimestamp(
             value).strftime('%d.%m.%Y, %H:%M')
-        return value
+
+    @validator('completion_day_level', pre=True)
+    def parse_completion(cls, value):
+        return "".join(map(lambda x: u'\u2605' if str(x) in value.keys() else u'\u2606', range(1, 25)))
 
 
 if __name__ == '__main__':
